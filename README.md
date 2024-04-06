@@ -1,4 +1,4 @@
-5 topics that intest me:
+5 topics that interest me:
 
     Robotics
     Computer graphics and GUIs
