@@ -1,0 +1,116 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+
+        //INSTRUCTION: 1.1.1.a c1.c2.c3.c4 c5.c6.c7.c8 d3.j1.j2.j3
+        //If 'a' is 0, it is an A(Address) instruction, otherwise, its a C(Compute-Store-Jump) instruction
+        Not(in=instruction[15], out=A);
+        Not(in=A, out=C);
+
+        //Outputs whenever M was written to or not
+        And(a=C, b=instruction[3], out=writeM);
+
+        //If the A Register is accessed, LoadA = 1
+        And(a=C, b=instruction[5], out=CAndADest);
+        Or(a=CAndADest, b=A, out=LoadA);
+        
+        //Address to be loaded in the A register 
+        Mux16(a=instruction, b=ALUOut, sel=CAndADest, out=Ain);
+
+        //A Register
+        ARegister(in=Ain, load=LoadA, out=AReg);
+
+        //Output the adresss inside of the A Register 
+        Or16(a=AReg, b=false, out[0..14]=addressM);
+        
+        //Checks whenever the A or the M value needs to be loaded
+        Mux16(a=AReg, b=inM, sel=instruction[12], out=AorM);
+        
+        //If the D register is accessed
+        And(a=instruction[15], b=instruction[4], out=LoadD);
+
+        //D Register
+        DRegister(in=ALUOut, load=LoadD, out=DReg);
+
+        //D Register ALU'd with either A or M, c1c2c3c4 c5c6 provide the instructions 
+        ALU(x=DReg, y=AorM, //Order is important?!
+         
+         zx=instruction[11],
+         nx=instruction[10],
+         zy=instruction[9],
+         ny=instruction[8],
+         f=instruction[7],
+         no=instruction[6],
+         
+         out=ALUOut,
+         zr=Zero,
+         ng=Negation);
+
+        //Output of the M value
+        Or16(a=ALUOut, b=false, out=outM);
+
+        //Zero or Negative 
+        Or(a=Zero, b=Negation, out=ZOrN);
+
+        //Positive?
+        Not(in=ZOrN, out=Pos);
+
+        //Jump if larger than zero
+        And(a=Pos, b=instruction[0], out=JGT);
+
+        //Jump if equal to zero and is instructed to 
+        And(a=Zero, b=instruction[1], out=JEQ);
+
+        //Jump if less than zero and instructed to 
+        And(a=Negation, b=instruction[2], out=JLT);
+
+        //Jump if less than or equal to zero 
+        Or(a=JLT, b=JEQ, out=JLE);
+
+        //Jump
+        Or(a=JLE, b=JGT, out=JMP);
+        
+        //Jump part of Compute-Store-Jump
+        And(a=C, b=JMP, out=JMPifC);
+
+        //Counter
+        PC(in=AReg, load=JMPifC, inc=true, reset=reset, out[0..14]=pc);
+}
