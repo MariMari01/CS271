@@ -20,31 +20,81 @@ string parser(string line)
 
 
 
+//Documents the file's symbols and replaces them with their corresponding non symbol value.
+map<string,string> symbol_parser(vector<string>lines, map<string,string>symbol_table)
+{
+    map<string,string>symbols = symbol_table; 
+
+    //First pass
+    int lines_excluding_labels = 0;
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        lines_excluding_labels++;
+        if (lines[i][0] == '(')
+        {   
+            lines_excluding_labels = lines_excluding_labels - 1;
+            
+            string address = to_string(lines_excluding_labels);
+            string address_var = lines[i].substr(1, lines[i].size() - 2);
+
+            symbols.insert({address_var, address});
+        }
+    }
+
+    int current_register = 16;
+    //Second pass
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        //If we have an A instruction and we have a symbol instead of a number 
+        if(lines[i][0] == '@' && !(isdigit(lines[i][1])))
+        {
+            //Check if we know the value of the value from our symbol table
+            string a_inst_symbol = lines[i].substr(1, lines[i].size());
+
+            //If we dont, add it to it.
+            if(symbols.find(a_inst_symbol) == symbols.end())
+            {
+                symbols.insert({a_inst_symbol, to_string(current_register)});
+                current_register++;
+            }
+        }
+    }
+    return symbols;
+}
 
 
 
 //Generates the machine code from the parsed input file.
-string machine_code_generator(string line, map<string,string>comp, map<string,string>dest, map<string,string>jump)
+string machine_code_generator(string line, map<string,string>symbols, map<string,string>comp, map<string,string>dest, map<string,string>jump)
 {
     string instruction;
     string comp_inst;
     string dest_inst;
     string jump_inst;
     
+    string binary_num;
+
     //A instruction
     if (line[0] == '@')
     {
         string comp_inst = line.substr(1, line.size());
-        string binary_num;
+        int num;
 
         //If Value is a Number
-        int num = stoi(comp_inst);
-
+        if (isdigit(comp_inst[0]))
+            num = stoi(comp_inst);
+        else
+        {
+            num = stoi(symbols.at(comp_inst));
+        }
         binary_num = bitset<15>(num).to_string();
 
-        binary_num = '0' + binary_num;
-
-        instruction = binary_num;
+        instruction = '0' + binary_num;
+    }
+    
+    else if (line[0] == '(')
+    {
+        return "";
     }
     //C instruction 
     else
@@ -76,20 +126,6 @@ string machine_code_generator(string line, map<string,string>comp, map<string,st
     }
     return instruction;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -165,3 +201,40 @@ map<string,string> jump_table()
 
     return jump_table;
 }
+
+//Predetermined symbol table
+map<string,string>pre_d_symbol_table()
+{
+    map<string,string>pds_table;
+
+    pds_table.insert({"SP"    ,"0"});
+    pds_table.insert({"LCL"   ,"1"});
+    pds_table.insert({"ARG"   ,"2"});
+    pds_table.insert({"THIS"  ,"3"});
+    pds_table.insert({"THAT"  ,"4"});
+    pds_table.insert({"R0"    ,"0"});
+    pds_table.insert({"R1"    ,"1"});
+    pds_table.insert({"R2"    ,"2"});
+    pds_table.insert({"R3"    ,"3"});
+    pds_table.insert({"R4"    ,"4"});
+    pds_table.insert({"R5"    ,"5"});
+    pds_table.insert({"R6"    ,"6"});
+    pds_table.insert({"R7"    ,"7"});
+    pds_table.insert({"R8"    ,"8"});
+    pds_table.insert({"R9"    ,"9"});
+    pds_table.insert({"R10"   ,"10"});
+    pds_table.insert({"R11"   ,"11"});
+    pds_table.insert({"R12"   ,"12"});
+    pds_table.insert({"R13"   ,"13"});
+    pds_table.insert({"R14"   ,"14"});
+    pds_table.insert({"R15"   ,"15"});
+    pds_table.insert({"SCREEN","16384"});
+    pds_table.insert({"KBD"   ,"24576"});
+
+    return pds_table;
+}
+
+
+
+
+

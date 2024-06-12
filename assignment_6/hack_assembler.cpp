@@ -26,9 +26,11 @@ using std::bitset;
 int main(int argc, char* argv[])
 {
 
-    map<string,string>dest = dest_table();
-    map<string,string>jump = jump_table();
-    map<string,string>comp = comp_table();
+    map<string,string> dest = dest_table();
+    map<string,string> jump = jump_table();
+    map<string,string> comp = comp_table();
+    map<string,string> symb = pre_d_symbol_table();
+    map<string,string> updated_symb;
 
     vector<string> file_lines;
 
@@ -44,8 +46,6 @@ int main(int argc, char* argv[])
 
     if (input_file.is_open())
     {
-        int line = 0;
-
         while(getline(input_file,file_line))
         {
             string parsed_line = parser(file_line);
@@ -53,8 +53,6 @@ int main(int argc, char* argv[])
             if (parsed_line != "")
             {
                 file_lines.push_back(parsed_line);                
-                //cout << endl << file_lines[line];
-                line += 1;
             }
         }
     }
@@ -64,11 +62,16 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+    updated_symb = symbol_parser(file_lines, symb);
+
     for (size_t i = 0; i < file_lines.size(); i++)
     {
-        string binary_code = machine_code_generator(file_lines[i], comp, dest, jump);
+        string binary_code = machine_code_generator(file_lines[i], updated_symb, comp, dest, jump);
 
-        output_file << binary_code << endl;
+        if (binary_code != "")
+            output_file << binary_code << endl;
     }
+    input_file.close();
+    output_file.close();
     return 0;
 }
