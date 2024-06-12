@@ -3,15 +3,11 @@ File: hack_assembler.cpp
 Author: Samuel Garcia Lopez
 
 Description:
-This file assembles Hack assembly code into binary instructions
-for the computer. 
+This file assembles assembly code into binary machine code. 
 */
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <bitset>
 #include "functions.hpp"
-
 
 using std::cout;
 using std::endl;
@@ -19,18 +15,14 @@ using std::endl;
 using std::ifstream;
 using std::ofstream;
 
-using std::vector;
-
-using std::bitset;
 
 int main(int argc, char* argv[])
 {
-
+    //Define our needed tables
     map<string,string> dest = dest_table();
     map<string,string> jump = jump_table();
     map<string,string> comp = comp_table();
     map<string,string> symb = pre_d_symbol_table();
-    map<string,string> updated_symb;
 
     vector<string> file_lines;
 
@@ -44,6 +36,7 @@ int main(int argc, char* argv[])
     output_file.open("output.hack");
     string file_line;
 
+    //If the file is able to be opened
     if (input_file.is_open())
     {
         while(getline(input_file,file_line))
@@ -62,12 +55,12 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    updated_symb = symbol_parser(file_lines, symb);
-
+    //Update the symbol table
+    symb = symbol_parser(file_lines, symb);
     for (size_t i = 0; i < file_lines.size(); i++)
     {
-        string binary_code = machine_code_generator(file_lines[i], updated_symb, comp, dest, jump);
-
+        string binary_code = machine_code_generator(file_lines[i], symb, comp, dest, jump);
+        //We skip over (LABLES)
         if (binary_code != "")
             output_file << binary_code << endl;
     }

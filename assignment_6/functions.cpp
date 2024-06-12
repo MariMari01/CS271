@@ -19,8 +19,6 @@ string parser(string line)
 }
 
 
-
-//Documents the file's symbols and replaces them with their corresponding non symbol value.
 map<string,string> symbol_parser(vector<string>lines, map<string,string>symbol_table)
 {
     map<string,string>symbols = symbol_table; 
@@ -29,18 +27,21 @@ map<string,string> symbol_parser(vector<string>lines, map<string,string>symbol_t
     int lines_excluding_labels = 0;
     for (size_t i = 0; i < lines.size(); i++)
     {
+
         lines_excluding_labels++;
         if (lines[i][0] == '(')
         {   
+            //Dont count a line if there is a lable
             lines_excluding_labels = lines_excluding_labels - 1;
             
             string address = to_string(lines_excluding_labels);
+            //Parse away both brackets to get the lable name 
             string address_var = lines[i].substr(1, lines[i].size() - 2);
 
             symbols.insert({address_var, address});
         }
     }
-
+    //Start ay register 16
     int current_register = 16;
     //Second pass
     for (size_t i = 0; i < lines.size(); i++)
@@ -55,6 +56,7 @@ map<string,string> symbol_parser(vector<string>lines, map<string,string>symbol_t
             if(symbols.find(a_inst_symbol) == symbols.end())
             {
                 symbols.insert({a_inst_symbol, to_string(current_register)});
+                //Move over a register
                 current_register++;
             }
         }
@@ -64,7 +66,6 @@ map<string,string> symbol_parser(vector<string>lines, map<string,string>symbol_t
 
 
 
-//Generates the machine code from the parsed input file.
 string machine_code_generator(string line, map<string,string>symbols, map<string,string>comp, map<string,string>dest, map<string,string>jump)
 {
     string instruction;
@@ -84,16 +85,15 @@ string machine_code_generator(string line, map<string,string>symbols, map<string
         if (isdigit(comp_inst[0]))
             num = stoi(comp_inst);
         else
-        {
             num = stoi(symbols.at(comp_inst));
-        }
-        binary_num = bitset<15>(num).to_string();
 
+        binary_num = bitset<15>(num).to_string();
         instruction = '0' + binary_num;
     }
     
     else if (line[0] == '(')
     {
+        //Return nothing if we encounter a lable
         return "";
     }
     //C instruction 
@@ -129,7 +129,6 @@ string machine_code_generator(string line, map<string,string>symbols, map<string
 
 
 
-//Computation table look up
 map<string,string> comp_table()
 {
     map<string,string> comp_table;
@@ -168,7 +167,6 @@ map<string,string> comp_table()
     return comp_table;
 }
 
-//Destination table look up 
 map<string,string> dest_table()
 {
     map<string,string> dest_table;
@@ -185,7 +183,6 @@ map<string,string> dest_table()
     return dest_table;
 }
 
-//Jump type table look up
 map<string,string> jump_table()
 {
     map<string,string> jump_table;
@@ -202,8 +199,7 @@ map<string,string> jump_table()
     return jump_table;
 }
 
-//Predetermined symbol table
-map<string,string>pre_d_symbol_table()
+map<string,string> pre_d_symbol_table()
 {
     map<string,string>pds_table;
 
